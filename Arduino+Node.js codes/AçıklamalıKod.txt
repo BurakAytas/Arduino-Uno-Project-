@@ -1,0 +1,52 @@
+const cron = require('cron'); // discord kanalına bilgi verebilmek için sürekli olarak çalışan bir job tanımlayacağız
+const Discord = require('discord.js'); // discord botu için gerekli kütüphaneyi tanımlıyoruz
+const client = new Discord.Client(); // Botun çalışması için client oluşturduk
+const SerialPort = require('serialport'); // arduinodan veri almak için gerekli kütüphaneyi ekliyoruz
+const Readline = require('@serialport/parser-readline'); // gelen veriyi okumak için bir kütüphane ekliyoruz
+
+const port = new SerialPort('/COM3', { baudRate: 9600 }); // bizim durumumuzda arduino'nun COM3 Portuna 9600 üzerinden bağlandığını bildirdik
+const parser = port.pipe(new Readline({ delimiter: '\n' })); // arduinonun mesajını okumak için cümlelerin sonunda \n ifadesini arayacağımızı söyledik
+
+var ArduinoData = "Arduino initializing"; // gelen datayı saklamak için boş olmayan bir değişken tanımlıyoruz metin önemli değil
+var temp = 0;
+
+port.on("open", () => {
+    console.log('serial port open'); // portun açılıp iletişimin bağladığını teyit etmek için bir kontrol mekanizması ekledik
+});
+  
+parser.on('data', data =>{
+    console.log('got word from arduino:',data.length + " -> " + data ); //data değişkenine arduinodan gelen veriyi kayıt ettik ve görmek için console'a çıktı aldık
+    ArduinoData = data; //local scopeda olan datayı "Cron" içinde kullanabilmek için global scope'ta tanımlı olan değişkenimize atadık
+});
+ 
+client.login('Nzg3MzQ2MzE1NDg2ODIyNDEx.X9TnZQ.FUtNVWdnBg8TI6RqqLK2HX2b81g'); // discord botumuzun giriş yapabilmesi için gerekli olan token (her bot için unique dir)
+
+client.once('ready', () => {
+    const mainChannel = client.channels.cache.get(`795335063075422228`); // mesajları göndermek istediğimiz kanalın id sini burda veriyoruz
+    console.log('Bot is online!'); // botun hazır ve çalışır halde olduğunu anlamamız için bir kontrol metni yerleştirdik.
+
+    let arduino = new cron.CronJob('* * * * * *', () => { // buradaki yıldızlar sırası ile saniye, dakika, saat, gün, ay ve yılı ifade ediyor. 
+                                                      // buraya eğer int değerler girseydik sadece girilen tarihte çalışacaktı * her zaman çalış demek oluyor
+        if(ArduinoData == 0) // arduionumuz seri port üzerinden 0 gönderdiği durumda gaz kaçağı olduğunu anlıyoruz
+        mainChannel.send("GAZ KAÇAĞI VAR !!")
+        if(ArduinoData == 1) // arduionumuz seri port üzerinden 1 gönderdiği durumda hareket olduğunu anlıyoruz
+        mainChannel.send("HAREKET TESPİT EDİLDİ !!")
+        ArduinoData = 888; // gelen veriyi arduionun göndermediği bir veri ile değiştirerek sonsuz döngüye girmekten kurtarıyoruz.
+        if(ArduinoData < 40 && ArduinoData > 10){ // arduionumuz seri port üzerinden 40 ile 10 arası bir değer gönderdiği durumda oda sıcaklığı hakkında bilgi alıyoruz
+            temp = ArduinoData;
+        }
+    });
+    arduino.start()
+});
+
+client.on('message', message =>{
+    const mainChannel = client.channels.cache.get(`795335063075422228`);
+    if( message.content.startsWith("uno") || message.content.startsWith("Uno")) {
+        const args = message.content.slice(prefix.length).split(/ +/);
+        const command = args.shift().toLowerCase();
+        if(command === 'sıcaklık'){
+            mainChannel.send("Ortam sıcaklığı: " + temp)
+        }
+    }
+    else return;
+});

@@ -1,0 +1,50 @@
+int pirPin = 9; // hareket sensörü pini
+int redLed = 12;// kırmızı led pini
+int greenLed = 11;// yeşil led pini
+int buzzer = 10; // buzzer pini
+int smoke = A5;// gaz sensörü pini
+int heatSensor = A0; // ısı sensörü pini
+// Your threshold value
+int smokeThres = 250; //gaz eşik değeri
+int readValue = 0; // ısı sensöründen okunan değer
+float heatVolt = 0; // ısı sensöründen gelen volt değeri
+float temp = 0; //nihai ısı sonucu
+void setup() {
+pinMode(redLed, OUTPUT); // kırmızı ledi output yaptık
+pinMode(greenLed, OUTPUT); // yeşil ledi output yaptık
+pinMode(buzzer, OUTPUT); // buzzer'ı output yaptık
+pinMode(smoke, INPUT); // gaz sensörünü input yaptık
+pinMode(pirPin, INPUT); // hareket sensörünü input yaptık
+Serial.begin(9600);
+}
+void loop() {
+int smokeSensor = analogRead(smoke); //smoke sensörden veri okuduk
+int motion = digitalRead(pirPin); //hareket sensöründen veri okuduk
+readValue = analogRead(heatSensor); //gelen veriyi kayıt ettik
+heatVolt = (5000.0 / 1023.0) * readValue; // volt değerini elde ettik
+temp = heatVolt / 10.0; // nihai ısıyı hesapladık
+// Checks if it has reached the threshold value
+if (smokeSensor > smokeThres) // gaz sensörü uyarı verirse
+{
+ digitalWrite(redLed, HIGH); //kırmızı ledi yak
+ digitalWrite(greenLed, LOW);//yeşil ledi söndür
+ tone(buzzer, 1000, 200);//buzzer' ı çalıştır
+ Serial.println(0); //serial porta 0 verisi gönder
+ delay(1000); // 1 saniye bekle
+}
+else // sensörden uyarı gelmezse
+{
+ digitalWrite(redLed, LOW); // kırmızı ledi söndür
+ digitalWrite(greenLed, HIGH); // yeşil ledi yak
+ noTone(buzzer); // buzzer'ı sustur
+ delay(1000); // 1 saniye bekle
+}
+
+if (motion == HIGH) // hareket algılandı
+{
+ Serial.println(1); // serial porta 1 verisi gönder
+ delay(5000); // 5 saniye bekle
+}
+Serial.println(temp); // hesaplanan ısı değerini serial porttan gönder
+delay(100);// 1 saniye bekle
+}
