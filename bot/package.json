@@ -1,0 +1,17 @@
+{
+  "name": "arduino-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot that relays Arduino Uno gas, motion and temperature readings from a serial port",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "dependencies": {
+    "@serialport/parser-readline": "^9.0.1",
+    "cron": "^1.8.2",
+    "discord.js": "^12.5.3",
+    "dotenv": "^8.6.0",
+    "serialport": "^9.0.7"
+  },
+  "license": "MIT"
+}
